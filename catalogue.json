@@ -2,8 +2,8 @@
   "brand": "AB Labs",
   "bot_name": "Pepper",
   "currency": "£",
-  "tagline": "AB Labs Product Catalogue",
-  "_note": "This file seeds the database on first startup. For an existing shop, edit products in the admin dashboard. Product formats, sizes and placeholder prices require confirmation before publishing.",
+  "tagline": "AB Labs Peptide Catalogue",
+  "_note": "Draft catalogue. Confirm each product's format, size and price before publishing. This file seeds the database on first startup. Update an existing catalogue through the admin dashboard.",
   "categories": [
     "Nasal Sprays",
     "Vials",
@@ -17,8 +17,8 @@
       "name": "RETA",
       "size": "To be confirmed",
       "price": 22,
-      "summary": "Format pending confirmation.",
-      "description": "Product details pending confirmation.",
+      "summary": "RETA by AB Labs.",
+      "description": "Available formats and pack sizes will be listed once confirmed.",
       "key_ingredients": [],
       "how_to_use": ""
     },
@@ -28,8 +28,8 @@
       "name": "MTB",
       "size": "To be confirmed",
       "price": 20,
-      "summary": "Format pending confirmation.",
-      "description": "Product details pending confirmation.",
+      "summary": "MTB by AB Labs.",
+      "description": "Available formats and pack sizes will be listed once confirmed.",
       "key_ingredients": [],
       "how_to_use": ""
     },
@@ -39,8 +39,8 @@
       "name": "BPC-157",
       "size": "To be confirmed",
       "price": 18,
-      "summary": "Format pending confirmation.",
-      "description": "Product details pending confirmation.",
+      "summary": "BPC-157 by AB Labs.",
+      "description": "Available formats and pack sizes will be listed once confirmed.",
       "key_ingredients": [],
       "how_to_use": ""
     }
