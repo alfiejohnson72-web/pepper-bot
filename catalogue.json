@@ -5,8 +5,8 @@
   "tagline": "AB Labs Skincare: peptide serums for skin that looks firmer, smoother and brighter.",
   "products": [
     {
-      "id": "copper-serum",
-      "name": "Copper Peptide Serum",
+      "id": "RETATRUTIDE" 
+      "name": "RETA",
       "size": "30 ml",
       "price": 34,
       "subscription_price": 29,
@@ -18,8 +18,8 @@
       "subscribe_link": "https://buy.stripe.com/REPLACE_ME_copper_sub"
     },
     {
-      "id": "firming-serum",
-      "name": "Multi-Peptide Firming Serum",
+      "id": "BPC-157",
+      "name": "BPC-157",
       "size": "30 ml",
       "price": 32,
       "subscription_price": 27,
@@ -31,8 +31,8 @@
       "subscribe_link": "https://buy.stripe.com/REPLACE_ME_firming_sub"
     },
     {
-      "id": "expression-serum",
-      "name": "Expression Line Serum",
+      "id": "MELANOTAN",
+      "name": "MT2",
       "size": "30 ml",
       "price": 29,
       "subscription_price": 25,
@@ -44,8 +44,8 @@
       "subscribe_link": "https://buy.stripe.com/REPLACE_ME_expression_sub"
     },
     {
-      "id": "eye-cream",
-      "name": "Peptide Eye Cream",
+      "id": "NASAL SPRAY",
+      "name": "NASAL SPRAY",
       "size": "15 ml",
       "price": 27,
       "subscription_price": 23,
@@ -57,17 +57,4 @@
       "subscribe_link": ""
     },
     {
-      "id": "routine-bundle",
-      "name": "Full Peptide Routine (all 4)",
-      "size": "4 products",
-      "price": 99,
-      "subscription_price": 85,
-      "summary": "All four products together. Saves £23 compared with buying them separately.",
-      "key_ingredients": ["Everything above"],
-      "best_for": "Anyone who wants the complete routine, or gifts",
-      "how_to_use": "Morning: firming serum, expression serum, eye cream, moisturiser, SPF. Evening: copper serum, expression serum, eye cream, moisturiser.",
-      "buy_link": "https://buy.stripe.com/REPLACE_ME_bundle",
-      "subscribe_link": ""
-    }
-  ]
-}
+    
