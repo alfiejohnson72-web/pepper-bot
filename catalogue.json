@@ -2,42 +2,47 @@
   "brand": "AB Labs",
   "bot_name": "Pepper",
   "currency": "£",
-  "tagline": "AB Labs Skincare: a good moisturiser and daily SPF.",
-  "_note": "This file is only used the very first time the shop starts, to fill the database. After that, change products in the admin dashboard. Prices here are placeholders.",
-  "categories": ["Moisturisers", "Sun protection"],
+  "tagline": "AB Labs Product Catalogue",
+  "_note": "This file seeds the database on first startup. For an existing shop, edit products in the admin dashboard. Product formats, sizes and placeholder prices require confirmation before publishing.",
+  "categories": [
+    "Nasal Sprays",
+    "Vials",
+    "Pre-Filled Pens",
+    "Format Pending"
+  ],
   "products": [
     {
-      "id": "daily-moisturiser",
-      "category": "Moisturisers",
-      "name": "Daily Moisturiser",
-      "size": "50 ml",
+      "id": "reta",
+      "category": "Format Pending",
+      "name": "RETA",
+      "size": "To be confirmed",
       "price": 22,
-      "summary": "Lightweight everyday moisturiser that leaves skin feeling soft and hydrated, not greasy.",
-      "description": "A light cream for morning and evening. Sinks in fast, sits well under SPF, and suits most skin types.",
-      "key_ingredients": ["Full ingredients list to be added from the manufacturer"],
-      "how_to_use": "Smooth a small amount over clean face and neck, morning and evening. In the morning, follow with SPF."
+      "summary": "Format pending confirmation.",
+      "description": "Product details pending confirmation.",
+      "key_ingredients": [],
+      "how_to_use": ""
     },
     {
-      "id": "spf-50",
-      "category": "Sun protection",
-      "name": "Daily SPF 50",
-      "size": "50 ml",
+      "id": "mtb",
+      "category": "Format Pending",
+      "name": "MTB",
+      "size": "To be confirmed",
       "price": 20,
-      "summary": "High protection daily sun cream for face. Light, no white cast.",
-      "description": "For everyday use and for sunnier days. Apply as the last step of your morning routine.",
-      "key_ingredients": ["Full ingredients list to be added from the manufacturer"],
-      "how_to_use": "Apply generously as the last step of your morning routine, 15 minutes before sun exposure. Reapply every 2 hours and after swimming, sweating or towelling."
+      "summary": "Format pending confirmation.",
+      "description": "Product details pending confirmation.",
+      "key_ingredients": [],
+      "how_to_use": ""
     },
     {
-      "id": "spf-30",
-      "category": "Sun protection",
-      "name": "Daily SPF 30",
-      "size": "50 ml",
+      "id": "bpc-157",
+      "category": "Format Pending",
+      "name": "BPC-157",
+      "size": "To be confirmed",
       "price": 18,
-      "summary": "Everyday medium protection for face. Light enough to wear daily.",
-      "description": "A lighter everyday option for days mostly spent indoors or in the UK winter.",
-      "key_ingredients": ["Full ingredients list to be added from the manufacturer"],
-      "how_to_use": "Apply generously as the last step of your morning routine. Reapply every 2 hours when outdoors and after swimming, sweating or towelling."
+      "summary": "Format pending confirmation.",
+      "description": "Product details pending confirmation.",
+      "key_ingredients": [],
+      "how_to_use": ""
     }
   ]
 }
