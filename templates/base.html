@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Admin{% endblock %} · {{ brand }}</title>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1d1d1b;--muted:#6b6a66;--line:#e6e3dd;--accent:#2f5d50;--accent-ink:#fff;--warn:#a5521b;--bad:#a1272a;--good:#2f6b3a;--chip:#efece6}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--panel:#1d1d1b;--ink:#ecebe7;--muted:#a3a19b;--line:#33322f;--accent:#7fb8a5;--accent-ink:#0f1a16;--warn:#e0a46f;--bad:#ef8d8f;--good:#8fcf98;--chip:#2a2926}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav.side{background:var(--panel);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:2px}
+nav.side .logo{font-weight:700;font-size:17px;padding:4px 10px 16px}
+nav.side a{display:block;padding:8px 10px;border-radius:8px;color:var(--ink);text-decoration:none}
+nav.side a:hover,nav.side a.on{background:var(--chip)}
+nav.side .grow{flex:1}
+nav.side form{margin:0}
+nav.side .who{font-size:13px;color:var(--muted);padding:8px 10px}
+main{padding:28px 32px;max-width:1200px;width:100%;min-width:0}
+.grid>*{min-width:0}
+td a{overflow-wrap:anywhere}
+h1{font-size:24px;margin:0 0 20px}
+h2{font-size:17px;margin:0 0 12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.grid{display:grid;gap:14px}
+.cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stat .label{color:var(--muted);font-size:13px}
+.stat .value{font-size:24px;font-weight:650;font-variant-numeric:tabular-nums}
+.stat .sub{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--chip);font-size:12.5px;white-space:nowrap}
+.chip.good{color:var(--good)}.chip.bad{color:var(--bad)}.chip.warn{color:var(--warn)}
+label{display:block;font-weight:600;font-size:13.5px;margin:12px 0 5px}
+input[type=text],input[type=password],input[type=number],input[type=url],input[type=search],select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:90px;resize:vertical}
+.hint{color:var(--muted);font-size:13px;margin-top:4px}
+button,.btn{display:inline-block;padding:9px 16px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+button.ghost,.btn.ghost{background:transparent;color:var(--accent)}
+button.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.right{margin-left:auto}
+.flash{padding:11px 14px;border-radius:8px;margin-bottom:16px;border:1px solid var(--line);background:var(--panel)}
+.flash.ok{border-color:var(--good)}.flash.error{border-color:var(--bad);color:var(--bad)}
+.muted{color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:6px;height:140px;padding-top:10px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bar span{display:block;width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+.bar small{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--chip)}
+.msg{padding:10px 12px;border-radius:10px;margin:8px 0;max-width:75%;white-space:pre-wrap}
+.msg.customer{background:var(--chip)}
+.msg.admin{background:var(--accent);color:var(--accent-ink);margin-left:auto}
+.msg small{display:block;opacity:.7;font-size:11.5px;margin-top:4px}
+pre.block{white-space:pre-wrap;font:inherit;margin:0}
+@media (max-width:860px){.shell{grid-template-columns:1fr}nav.side{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--line);padding:10px}nav.side .logo{width:100%;padding:4px 10px}nav.side .grow{display:none}main{padding:18px 16px}.cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}.cols-2{grid-template-columns:1fr}.table-wrap{overflow-x:auto}}
+</style>
+</head>
+<body>
+{% if admin %}
+<div class="shell">
+<nav class="side">
+  <div class="logo">{{ brand }} admin</div>
+  {% set p = request.url.path %}
+  <a href="/" class="{{ 'on' if p == '/' }}">Overview</a>
+  <a href="/orders" class="{{ 'on' if p.startswith('/orders') }}">Orders</a>
+  {% if can('manager') %}<a href="/products" class="{{ 'on' if p.startswith('/products') }}">Products</a>
+  <a href="/categories" class="{{ 'on' if p.startswith('/categories') }}">Categories</a>{% endif %}
+  <a href="/customers" class="{{ 'on' if p.startswith('/customers') }}">Customers</a>
+  <a href="/support" class="{{ 'on' if p.startswith('/support') }}">Support</a>
+  {% if can('manager') %}<a href="/announce" class="{{ 'on' if p.startswith('/announce') }}">Announcements</a>
+  <a href="/settings" class="{{ 'on' if p.startswith('/settings') }}">Settings</a>{% endif %}
+  {% if can('owner') %}<a href="/admins" class="{{ 'on' if p.startswith('/admins') }}">Admins</a>{% endif %}
+  <div class="grow"></div>
+  <a href="/account" class="{{ 'on' if p.startswith('/account') }}">My account</a>
+  <div class="who">{{ admin.username }} · {{ admin.role }}</div>
+  <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ghost" style="width:100%">Sign out</button></form>
+</nav>
+<main>
+{% if flash %}<div class="flash {{ flash.kind }}">{{ flash.text }}</div>{% endif %}
+{% block content %}{% endblock %}
+</main>
+</div>
+{% else %}
+<main style="max-width:420px;margin:60px auto">
+{% if flash %}<div class="flash {{ flash.kind }}">{{ flash.text }}</div>{% endif %}
+{% block public %}{% endblock %}
+</main>
+{% endif %}
+</body>
+</html>

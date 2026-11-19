@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Ticket #{{ t.id }}{% endblock %}
+{% block content %}
+<p><a href="/support">← Support</a></p>
+<div class="row"><h1 style="margin:0">Ticket #{{ t.id }}</h1><span class="chip">{{ t.status }}</span></div>
+<p class="muted"><a href="/customers/{{ t.user_id }}">{{ t.first_name }}</a> {{ '@' ~ t.username if t.username }} · opened {{ t.created_at|ts }}</p>
+<div class="panel" style="display:flex;flex-direction:column">
+{% for m in messages %}<div class="msg {{ 'admin' if m.sender == 'admin' else 'customer' }}">{{ m.body }}<small>{{ m.sender }} · {{ m.created_at|ts }}</small></div>{% endfor %}
+</div>
+<form class="panel" method="post" action="/support/{{ t.id }}/reply"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label for="b">Reply (sent to the customer on Telegram)</label><textarea id="b" name="body"></textarea>
+<div class="row" style="margin-top:10px"><button>Send reply</button><button class="ghost" name="close" value="1">Send and close</button></div></form>
+{% endblock %}

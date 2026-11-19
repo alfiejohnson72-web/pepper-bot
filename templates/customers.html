@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Customers{% endblock %}
+{% block content %}
+<h1>Customers</h1>
+<form class="panel row" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Name, @username, Telegram id or referral code" style="flex:1;min-width:220px"><button>Search</button></form>
+<div class="panel table-wrap"><table>
+<tr><th>Customer</th><th>Joined</th><th>Last seen</th><th class="num">Paid orders</th><th class="num">Spent</th><th></th></tr>
+{% for u in customers %}<tr><td><a href="/customers/{{ u.id }}">{{ u.first_name or 'Unknown' }}</a><div class="muted">{{ '@' ~ u.username if u.username else u.id }}</div></td>
+<td>{{ u.created_at|ts('%d %b %Y') }}</td><td>{{ u.last_seen|ts }}</td><td class="num">{{ u.paid_orders }}</td><td class="num">{{ u.spent|money }}</td>
+<td>{% if u.blocked %}<span class="chip bad">Paused</span>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">No customers yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

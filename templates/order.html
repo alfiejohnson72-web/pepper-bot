@@ -1,0 +1,41 @@
+{% extends "base.html" %}{% from "_status.html" import status, pay %}{% block title %}{{ o.ref }}{% endblock %}
+{% block content %}
+<p><a href="/orders">← Orders</a></p>
+<div class="row"><h1 style="margin:0">Order {{ o.ref }}</h1><span class="muted">Order</span> {{ status(o.status) }} <span class="muted">Payment</span> {{ pay(o.payment_status) }}</div>
+<p class="muted">Placed {{ o.created_at|ts }}{% if o.paid_at %} · paid {{ o.paid_at|ts }}{% endif %}</p>
+<div class="grid cols-2" style="align-items:start">
+<div>
+<div class="panel"><h2>Items</h2><table>
+{% for it in items %}<tr><td>{{ it.qty }} × {{ it.name }}</td><td class="num">{{ (it.unit_pence * it.qty)|money }}</td></tr>{% endfor %}
+<tr><td class="muted">Delivery</td><td class="num">{{ o.delivery_pence|money }}</td></tr>
+<tr><td><b>Total</b></td><td class="num"><b>{{ o.total_pence|money }}</b></td></tr></table></div>
+<div class="panel"><h2>Customer</h2>
+<p><a href="/customers/{{ o.user_id }}">{{ o.customer_name or customer.first_name }}</a>{% if customer.username %} · @{{ customer.username }}{% endif %}<br>
+{% if o.customer_email %}{{ o.customer_email }}<br>{% endif %}
+<span class="muted">Telegram id {{ o.user_id }}</span></p>
+<h2>Ship to</h2><p>{{ o.shipping_address or 'Not given yet (filled in when Stripe confirms payment).' }}</p></div>
+<div class="panel"><h2>Payments</h2><table>
+<tr><th>Stripe session</th><th>Status</th><th class="num">Amount</th></tr>
+{% for p in pays %}<tr><td class="muted" style="word-break:break-all">{{ p.provider_ref }}</td><td>{{ pay(p.status) }}</td><td class="num">{{ p.amount_pence|money }}{% if p.refunded_pence %}<div class="muted">−{{ p.refunded_pence|money }}</div>{% endif %}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">No payment started.</td></tr>{% endfor %}</table>
+<form method="post" action="/orders/{{ o.id }}/refresh-payment" style="margin-top:10px"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ghost">Check payment with Stripe</button></form>
+{% if can('manager') and o.payment_status in ('paid','partially_refunded') %}
+<form method="post" action="/orders/{{ o.id }}/refund" style="margin-top:14px"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label for="amt">Refund (£)</label><div class="row"><input id="amt" type="text" name="amount" placeholder="Blank = full refund" style="max-width:200px"><label class="row" style="margin:0;font-weight:500"><input type="checkbox" name="confirm" value="yes" required> Yes, refund</label><button class="danger">Refund through Stripe</button></div><p class="hint">Refunds can't be undone.</p></form>{% endif %}
+</div>
+</div>
+<div>
+<form class="panel" method="post" action="/orders/{{ o.id }}/status"><h2>Fulfilment</h2>
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<label for="st">Status</label><select id="st" name="status">
+{% for s in statuses if s != 'paid' or o.status == 'paid' %}<option value="{{ s }}" {{ 'selected' if s == o.status }}>{{ STATUS_LABELS[s] }}</option>{% endfor %}</select>
+<label for="tn">Tracking number</label><input id="tn" type="text" name="tracking_number" value="{{ o.tracking_number or '' }}">
+<label for="tu">Tracking link</label><input id="tu" type="url" name="tracking_url" value="{{ o.tracking_url or '' }}" placeholder="https://www.royalmail.com/track-your-item#/tracking-results/...">
+<p class="hint">The customer gets a Telegram message when the status changes (switch this off in Settings).</p>
+<p><button>Update order</button></p></form>
+<form class="panel" method="post" action="/orders/{{ o.id }}/notes"><h2>Team notes</h2><input type="hidden" name="csrf" value="{{ csrf }}">
+<textarea name="notes">{{ o.admin_notes or '' }}</textarea><p class="hint">Only the team sees these.</p><p><button class="ghost">Save notes</button></p></form>
+<div class="panel"><h2>History</h2><table>
+{% for e in events %}<tr><td class="muted" style="white-space:nowrap">{{ e.created_at|ts }}</td><td>{{ e.kind.replace('_',' ') }}<div class="muted">{{ e.detail }}</div></td><td class="muted">{{ e.actor }}</td></tr>{% endfor %}</table></div>
+</div></div>
+{% endblock %}

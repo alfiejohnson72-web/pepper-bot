@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% from "_status.html" import status, pay %}{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+{% if db_ephemeral %}<div class="flash error">DB_PATH isn't set, so orders and customers are saved somewhere that's wiped on every deploy. Attach a Railway volume at /data and set DB_PATH=/data/shop.db.</div>{% endif %}
+{% if not payments_live %}<div class="flash error">Payments are off. Customers can browse but not pay. Add STRIPE_SECRET_KEY in Railway (see Settings).</div>
+{% elif test_mode %}<div class="flash">Stripe is in <b>test mode</b>. No real money is taken.</div>{% endif %}
+<div class="grid cols-4">
+  <div class="panel stat"><div class="label">Revenue (after refunds)</div><div class="value">{{ revenue|money }}</div><div class="sub">{{ rev_7|money }} last 7 days · {{ rev_30|money }} last 30</div></div>
+  <div class="panel stat"><div class="label">Paid orders</div><div class="value">{{ orders_paid }}</div><div class="sub">Average {{ avg|money }}</div></div>
+  <div class="panel stat"><div class="label">Customers</div><div class="value">{{ customers }}</div><div class="sub">{{ new_customers }} new this week</div></div>
+  <div class="panel stat"><div class="label">Needs you</div><div class="value">{{ to_ship }}</div><div class="sub"><a href="/orders?status=paid">to pack and ship</a> · <a href="/support">{{ open_tickets }} open tickets</a></div></div>
+</div>
+<div class="grid cols-2">
+<div class="panel"><h2>Sales, last 14 days</h2>
+<div class="bars">{% for d in days %}<div class="bar" title="{{ d.label }}: {{ d.amt|money }}"><span style="height:{{ (d.amt / peak * 100)|round(1) }}%"></span><small>{{ d.label[:2] }}</small></div>{% endfor %}</div>
+</div>
+<div class="panel"><h2>Payments</h2>
+<table><tr><th>Status</th><th class="num">Count</th><th class="num">Amount</th></tr>
+{% for r in pay_stats %}<tr><td>{{ pay(r.status) }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.amt|money }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No payments yet.</td></tr>{% endfor %}
+</table>
+<p class="muted" style="margin-bottom:0">Checkouts waiting for payment: {{ awaiting }} · refunded: {{ refunds|money }}</p>
+</div>
+</div>
+<div class="grid cols-2">
+<div class="panel"><h2>Recent orders</h2><div class="table-wrap">
+<table><tr><th>Order</th><th>Customer</th><th>Status</th><th class="num">Total</th></tr>
+{% for o in recent %}<tr><td><a href="/orders/{{ o.id }}">{{ o.ref }}</a><div class="muted">{{ o.created_at|ts }}</div></td><td>{{ '@' ~ o.username if o.username else o.first_name }}</td><td>{{ status(o.status) }}</td><td class="num">{{ o.total_pence|money }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No orders yet.</td></tr>{% endfor %}</table></div></div>
+<div class="panel"><h2>Best sellers</h2>
+<table><tr><th>Product</th><th class="num">Sold</th><th class="num">Revenue</th></tr>
+{% for t in top %}<tr><td>{{ t.name }}</td><td class="num">{{ t.qty }}</td><td class="num">{{ t.amt|money }}</td></tr>{% else %}<tr><td colspan="3" class="muted">Nothing sold yet.</td></tr>{% endfor %}</table></div>
+</div>
+{% endblock %}

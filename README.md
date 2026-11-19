@@ -1,92 +1,68 @@
-# Pepper: your Telegram shop bot
+# AB Labs shop: Telegram bot + admin dashboard
 
-Pepper sits in your Telegram group and in private chats. It does four jobs without you or Bert:
+One Railway service runs everything:
 
-1. **Welcomes** new group members and invites them to a private chat.
-2. **Talks to customers** in your voice. It asks about their skin, recommends one product and answers questions from your FAQ.
-3. **Takes them to payment.** Each recommendation comes with a button that opens a secure Stripe checkout, where they pay and enter their address.
-4. **Tracks every lead.** Your private team chat gets an alert whenever someone opens checkout or asks for a person. Type `/leads` for stats and `/export` for a spreadsheet.
+- **The Telegram shop (Pepper).** Customers browse by category, see product pages with photos, pick a quantity, fill a basket, pay on a secure Stripe page, and check their orders and tracking. They can also contact support, use a referral link, and chat to the AI assistant ("Help me choose").
+- **The admin dashboard** (a website). Manage products, photos, prices, stock, categories, orders, refunds, customers, support tickets, announcements, shop text, settings and admin accounts without touching code.
+- **Payments.** Stripe Checkout. An order is only marked paid when Stripe itself confirms it (a signed webhook, or a direct lookup). A customer's message or screenshot never marks anything paid.
+- **Notifications.** Payment confirmations, shipping updates, support replies and team alerts. Each one is sent once, and retried if Telegram fails.
 
-It refuses to talk about injectables, "research" peptides, weight-loss drugs or dosing. Those messages never reach the AI.
+AB Labs sells cosmetic skincare only. The dashboard refuses products that mention injectables, research peptides, weight-loss drugs, nasal sprays, capsules or mg doses, and the bot never shows one even if the database is edited by hand.
 
----
+## Files
 
-## What you'll need (about 1 hour the first time)
+| File | What it is |
+| --- | --- |
+| `bot.py` | The Telegram shop. Start the whole thing with `python bot.py` |
+| `web.py` + `templates/` | The admin dashboard and the Stripe webhook |
+| `store.py` | The database (SQLite): customers, products, orders, payments, tickets, settings, admins |
+| `payments.py` | Stripe checkout, verification and refunds |
+| `notify.py` | Customer and team notifications |
+| `guard.py` | The skincare-only rules for chat and products |
+| `catalogue.json` | The starting products. Only read the first time the shop starts; after that use the dashboard |
+| `faq.md` | The starting Q&A. After launch, edit it in the dashboard (Settings) |
+| `voice.md` | How the AI assistant talks |
+| `test_bot.py` | Offline tests: `python -m pytest -q` |
 
-| Thing | Where | Cost |
+## Railway variables
+
+Set these in Railway → your service → **Variables**. Values are never shown in the dashboard or logs.
+
+| Variable | Needed? | Where it comes from |
 | --- | --- | --- |
-| Telegram bot token | @BotFather in Telegram | Free |
-| Claude API key (the AI brain) | console.anthropic.com | Pay as you go, usually pennies per chat |
-| Stripe account (payments) | stripe.com | 1.5% + 20p per UK card payment |
-| Somewhere to run it 24/7 | railway.com | About $5 a month |
+| `TELEGRAM_BOT_TOKEN` | Yes (already set) | @BotFather |
+| `ANTHROPIC_API_KEY` | For the AI chat (already set) | console.anthropic.com |
+| `DB_PATH` | Yes: `/data/shop.db` | Must point at a Railway volume, or orders are lost on every deploy |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Yes, first start only | You choose. Creates the owner login |
+| `SESSION_SECRET` | Yes | Any long random text |
+| `ADMIN_CHAT_ID` | Recommended | Send `/chatid` in your team group |
+| `STRIPE_SECRET_KEY` | To take payments | Stripe → Developers → API keys. Use `sk_test_...` first |
+| `STRIPE_WEBHOOK_SECRET` | To take payments | Stripe → Developers → Webhooks → your endpoint → Signing secret |
 
----
+`PORT` is set by Railway automatically. The dashboard only runs when it's there.
 
-## Step 1: Make the bot in Telegram
+## Going live on Railway (in order)
 
-1. In Telegram, open **@BotFather** and send `/newbot`. Name it **Pepper** and give it a username such as `ABLabsSkinBot`.
-2. Copy the **token** it gives you and keep it private.
-3. Send `/setprivacy`, pick your bot and choose **Disable**, so it can see group messages.
-4. Optional: use `/setuserpic` to give it a profile photo and `/setdescription` to add a description.
+1. **Volume.** Railway → service → right-click → **Attach volume**, mount path `/data`.
+2. **Variables.** Add `DB_PATH=/data/shop.db`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET` and `ADMIN_CHAT_ID`.
+3. **Public address.** Service → **Settings** → **Networking** → **Generate domain**. That's your dashboard address.
+4. **Merge the pull request.** Railway redeploys. Sign in at the dashboard address.
+5. **Stripe, test mode first.** Add `STRIPE_SECRET_KEY=sk_test_...`. In Stripe → Developers → Webhooks → **Add endpoint**: URL `https://<your-domain>/stripe/webhook`, events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+6. **Test order.** Buy something in the bot with Stripe's test card `4242 4242 4242 4242`. It should show as paid in the dashboard and you should get the Telegram alerts.
+7. **Live.** Swap both Stripe values for the live ones.
 
-## Step 2: Make two Telegram groups
+## Before selling SPF
 
-- **Customer group** (for example "AB Labs Skin Club"): add the bot and make it an **admin**.
-- **Team group** (just you, Bert and the bot): this is where the alerts arrive. Once the bot is running (step 6), send `/chatid` here and copy the number it replies with.
+SPF products need a UK Responsible Person, a Cosmetic Product Safety Report, SCPN notification, and SPF and UVA test results that back the number on the label. Your manufacturer normally provides these. Replace the placeholder prices and "ingredients to be added" text in the dashboard first.
 
-## Step 3: Set up Stripe payment links
+## Team group commands
 
-1. Create a Stripe account and add your company and bank details.
-2. Go to **Product catalogue**, then **Add product**. Add each product with its price.
-   - For the Refill Club, add a second price on the same product: **Recurring**, custom interval, **every 6 weeks**.
-3. Go to **Payment Links**, then **New**. Pick a product, tick **Collect customers' addresses** (shipping, UK), then create the link. Do this for each product, plus one link for each subscription price.
-4. Go to **Settings**, then **Billing**, then **Customer portal**, and switch it on so subscribers can cancel themselves.
-5. Paste each link into `catalogue.json`, replacing the `https://buy.stripe.com/REPLACE_ME...` placeholders. A product whose link is still a placeholder shows "checkout not switched on yet" instead of a broken link.
-
-Stripe emails you on every sale and keeps the order list with each customer's address, so that's your packing list.
-
-## Step 4: Get a Claude API key
-
-At console.anthropic.com, add a payment card under **Billing**, then go to **API keys** and **Create key**. Set a monthly spend limit (for example £20) so there are no surprises.
-
-## Step 5: Make it yours (edit the text files, no coding)
-
-| File | What to change |
-| --- | --- |
-| `catalogue.json` | Brand name, bot name, products, prices, descriptions, payment links |
-| `voice.md` | How the bot talks. Paste in 5 to 10 real messages you've sent customers and it will copy your style |
-| `faq.md` | Delivery, returns and payment answers. The bot only answers from this file and the catalogue, so if something's missing here it says so and passes the customer to you |
-
-Keep the quote marks and commas in `catalogue.json` exactly as they are. If the bot won't start after an edit, a missing comma is usually why.
-
-## Step 6: Put it online
-
-**Option A: test it on your own computer first (10 minutes)**
-1. Install Python 3.11 or newer from python.org.
-2. Open a terminal in this folder and run `pip install -r requirements.txt`.
-3. Copy `.env.example` to a new file called `.env` and fill in the token, API key and team chat id.
-4. Run `python bot.py`, then message your bot in Telegram. It only runs while this window is open.
-
-**Option B: run it 24/7 on Railway**
-1. Create a free GitHub account, make a new **private** repository, and drag this folder's files into it. Don't upload `.env`.
-2. At railway.com, choose **New project**, then **Deploy from GitHub repo**, and pick that repository.
-3. Under **Variables**, add `TELEGRAM_BOT_TOKEN`, `ANTHROPIC_API_KEY` and `ADMIN_CHAT_ID`.
-4. Under **Settings**, add a **Volume** mounted at `/data`, and add the variable `DB_PATH=/data/leads.db` so your leads survive restarts.
-5. Railway starts it automatically using the `Procfile`. From now on, every change you save on GitHub redeploys the bot.
-
-## Team commands (only work in your team group)
-
-| Command | What it does |
-| --- | --- |
-| `/leads` | Lead counts and the 10 most recent people |
-| `/export` | Every lead as a spreadsheet (CSV) |
-| `/reply 123456789 your message` | Reply privately to a customer. The number is in each alert |
-| `/chatid` | Shows a chat's id (works anywhere) |
+`/leads` quick stats · `/export` leads spreadsheet · `/reply 123456789 message` reply to a customer · `/chatid` show a chat's id.
 
 ## Customer commands
 
-`/start` opens the menu, `/shop` shows the range and `/help` asks for a person. In the group, customers tag `@YourBot` or reply to it to ask a question.
+`/start` menu · `/shop` all products · `/basket` · `/orders` · `/help` contact support.
 
-## Checking it still works after edits
+## Tests
 
-Run `python -m pytest -q`. All tests should pass. They don't need internet access or keys.
+`python -m pytest -q` runs 40 offline tests covering every menu button, the basket, checkout, duplicate-order protection, payment verification (including forged webhooks and wrong amounts), refunds, access control, notifications, support, referrals, the product blocklist and every dashboard page. They use a throwaway database and a fake Stripe, so they never touch the live bot or real money.

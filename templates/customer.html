@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_status.html" import status, pay %}{% block title %}{{ u.first_name }}{% endblock %}
+{% block content %}
+<p><a href="/customers">← Customers</a></p>
+<div class="row"><h1 style="margin:0">{{ u.first_name or 'Customer' }}</h1>{% if u.blocked %}<span class="chip bad">Paused</span>{% endif %}</div>
+<p class="muted">{{ '@' ~ u.username if u.username }} · Telegram id {{ u.id }} · joined {{ u.created_at|ts('%d %b %Y') }} · language {{ u.language }}</p>
+<div class="grid cols-2" style="align-items:start">
+<div>
+<div class="panel table-wrap"><h2>Orders</h2><table>
+{% for o in orders %}<tr><td><a href="/orders/{{ o.id }}">{{ o.ref }}</a><div class="muted">{{ o.created_at|ts }}</div></td><td>{{ status(o.status) }}</td><td class="num">{{ o.total_pence|money }}</td></tr>
+{% else %}<tr><td class="muted">No orders.</td></tr>{% endfor %}</table></div>
+<div class="panel"><h2>Support tickets</h2><table>
+{% for t in tickets %}<tr><td><a href="/support/{{ t.id }}">#{{ t.id }}</a></td><td><span class="chip">{{ t.status }}</span></td><td class="muted">{{ t.updated_at|ts }}</td></tr>
+{% else %}<tr><td class="muted">None.</td></tr>{% endfor %}</table></div>
+</div>
+<div>
+<form class="panel" method="post" action="/customers/{{ u.id }}/message"><h2>Message them on Telegram</h2>
+<input type="hidden" name="csrf" value="{{ csrf }}"><textarea name="body" required></textarea><p><button>Send</button></p></form>
+<div class="panel"><h2>Referrals</h2>
+<p>Code <b>{{ u.referral_code }}</b><br>{% if referrer %}Referred by <a href="/customers/{{ referrer.id }}">{{ referrer.first_name }}</a><br>{% endif %}
+Friends who joined: {{ joined }} · friends who ordered: {{ ordered }}</p></div>
+{% if can('manager') %}<form class="panel" method="post" action="/customers/{{ u.id }}/block"><h2>Account access</h2>
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="blocked" value="{{ '0' if u.blocked else '1' }}">
+<p class="muted">{{ 'This customer is paused and can\'t shop.' if u.blocked else 'Pausing stops this customer using the shop. Their orders stay.' }}</p>
+<button class="{{ 'ghost' if u.blocked else 'danger' }}">{{ 'Unpause customer' if u.blocked else 'Pause customer' }}</button></form>{% endif %}
+</div></div>
+{% endblock %}
