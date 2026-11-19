@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Categories{% endblock %}
+{% block content %}
+<h1>Categories</h1>
+<div class="panel table-wrap"><table>
+<tr><th>Name</th><th class="num">Order</th><th>Showing</th><th class="num">Products</th><th></th><th></th></tr>
+{% for c in categories %}<tr>
+<td colspan="3"><form method="post" action="/categories/save" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ c.id }}">
+<input type="text" name="name" value="{{ c.name }}" style="max-width:240px"><input type="number" name="sort" value="{{ c.sort }}" style="max-width:80px">
+<label class="row" style="margin:0;font-weight:500"><input type="checkbox" name="active" {{ 'checked' if c.active }}> Showing</label><button class="ghost">Save</button></form></td>
+<td class="num">{{ counts.get(c.id, 0) }}</td><td></td>
+<td><form method="post" action="/categories/{{ c.id }}/delete" class="row"><input type="hidden" name="csrf" value="{{ csrf }}"><label class="row" style="margin:0;font-weight:500"><input type="checkbox" name="confirm" value="yes"> sure</label><button class="danger">Delete</button></form></td></tr>
+{% else %}<tr><td colspan="6" class="muted">No categories yet.</td></tr>{% endfor %}
+</table></div>
+<form class="panel" method="post" action="/categories/save"><h2>Add a category</h2>
+<input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="active" value="on">
+<div class="row"><input type="text" name="name" placeholder="e.g. Cleansers" style="max-width:300px" required><button>Add</button></div></form>
+{% endblock %}

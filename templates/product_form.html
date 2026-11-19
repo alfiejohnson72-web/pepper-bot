@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% block title %}{{ product.name if product else 'New product' }}{% endblock %}
+{% block content %}
+<p><a href="/products">← Products</a></p>
+<h1>{{ product.name if product else 'Add a product' }}</h1>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+<div class="grid cols-2" style="align-items:start">
+<form class="panel" method="post" action="/products/save">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+{% if product %}<input type="hidden" name="id" value="{{ product.id }}">{% endif %}
+<label for="name">Name</label><input id="name" type="text" name="name" value="{{ values.name or '' }}" maxlength="80" required>
+<div class="grid cols-2">
+<div><label for="price">Price (£)</label><input id="price" type="text" inputmode="decimal" name="price" value="{{ values.price or '' }}" required></div>
+<div><label for="size">Size</label><input id="size" type="text" name="size" value="{{ values.size or '' }}" placeholder="50 ml"></div>
+</div>
+<div class="grid cols-2">
+<div><label for="cat">Category</label><select id="cat" name="category_id"><option value="">None</option>
+{% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (values.category_id|string) == (c.id|string) }}>{{ c.name }}</option>{% endfor %}</select></div>
+<div><label for="stock">Stock</label><input id="stock" type="text" inputmode="numeric" name="stock" value="{{ values.stock if values.stock is not none else '' }}"><div class="hint">Leave blank if you don't track stock.</div></div>
+</div>
+<label for="summary">Short summary</label><textarea id="summary" name="summary" maxlength="300" style="min-height:60px">{{ values.summary or '' }}</textarea>
+<label for="description">Description</label><textarea id="description" name="description" maxlength="2000">{{ values.description or '' }}</textarea>
+<label for="ingredients">Ingredients</label><textarea id="ingredients" name="ingredients" maxlength="2000">{{ values.ingredients or '' }}</textarea><div class="hint">Paste the full INCI list from your manufacturer.</div>
+<label for="how">How to use</label><textarea id="how" name="how_to_use" maxlength="1000">{{ values.how_to_use or '' }}</textarea>
+<label class="row" style="font-weight:500"><input type="checkbox" name="active" {{ 'checked' if values.active in (1, '1', 'on', True) }}> Show in the shop</label>
+<p class="hint">Cosmetic skincare only. Products that mention injectables, research peptides, weight-loss drugs, nasal sprays, capsules or mg doses are refused.</p>
+<p><button>Save product</button></p>
+</form>
+{% if product %}
+<div>
+<div class="panel"><h2>Photo</h2>
+{% if product.image_path %}<img src="/media/product/{{ product.id }}" alt="" style="width:100%;max-width:320px;border-radius:10px;display:block;margin-bottom:12px">{% else %}<p class="muted">No photo yet.</p>{% endif %}
+<form method="post" action="/products/{{ product.id }}/image" enctype="multipart/form-data">
+<input type="hidden" name="csrf" value="{{ csrf }}">
+<input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
+<p class="hint">JPG, PNG or WebP, up to 5 MB. Square photos look best in Telegram.</p>
+<p><button>Upload photo</button></p></form>
+{% if product.image_path %}<form method="post" action="/products/{{ product.id }}/image/remove"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="ghost">Remove photo</button></form>{% endif %}
+</div>
+<div class="panel"><h2>Remove product</h2><p class="muted">Takes it out of the shop and out of baskets. Past orders still show it.</p>
+<form method="post" action="/products/{{ product.id }}/delete" class="row"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label class="row" style="margin:0;font-weight:500"><input type="checkbox" name="confirm" value="yes"> Yes, remove it</label><button class="danger">Remove</button></form></div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

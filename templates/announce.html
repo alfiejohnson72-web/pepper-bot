@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Announcements{% endblock %}
+{% block content %}
+<h1>Announcements</h1>
+<form class="panel" method="post" action="/announce"><input type="hidden" name="csrf" value="{{ csrf }}">
+<label for="b">Message to every customer ({{ audience }} people)</label><textarea id="b" name="body" required maxlength="3500"></textarea>
+<p class="hint">Sent to everyone who has started the bot and isn't paused. Each person gets it once. UK law only lets you send marketing to people who've agreed to it, so keep these to shop news for your existing customers.</p>
+<label class="row" style="font-weight:500"><input type="checkbox" name="confirm" value="yes"> Yes, send this to {{ audience }} customers</label>
+<p><button>Send announcement</button></p></form>
+<div class="panel"><h2>Sent before</h2><table>
+{% for a in past %}<tr><td class="muted" style="white-space:nowrap">{{ a.created_at|ts }}</td><td><pre class="block">{{ a.body }}</pre></td><td class="num">{{ a.recipients }} people</td></tr>
+{% else %}<tr><td class="muted">None yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

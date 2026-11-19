@@ -18,16 +18,16 @@ Customers should feel like they're texting A J or Bert on their phone, not a hel
 
 ## How a sale goes in our voice (example, not a script)
 
-customer: hi is the copper one any good
+customer: hi is the moisturiser any good
 us: yh its our best seller tbh
 
-us: whats ur main thing, lines or more just skin looking tired
+us: whats ur skin like, dry or more oily
 
-customer: bit of both
-us: copper serum then deffo
+customer: bit dry
+us: moisturiser then deffo
 
-us: people notice it first, smoother in like 2-3 weeks
-us: want the link?
+us: and if ur out in the day pop the spf 50 on after
+us: want me to add them?
 
 customer: how long does delivery take
 us: 2-3 days tracked

@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block title %}Support{% endblock %}
+{% block content %}
+<h1>Support</h1>
+<div class="row" style="margin-bottom:14px">{% for s, l in [('open','Waiting for us'),('answered','Answered'),('closed','Closed'),('all','All')] %}<a class="btn {{ '' if s == status else 'ghost' }}" href="/support?status={{ s }}">{{ l }}</a>{% endfor %}</div>
+<div class="panel table-wrap"><table>
+<tr><th>Ticket</th><th>Customer</th><th>Latest message</th><th>Updated</th></tr>
+{% for t in tickets %}<tr><td><a href="/support/{{ t.id }}">#{{ t.id }}</a></td><td>{{ t.first_name }}<div class="muted">{{ '@' ~ t.username if t.username }}</div></td>
+<td>{{ (t.last_body or '')[:120] }}</td><td class="muted">{{ t.updated_at|ts }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">Nothing here.</td></tr>{% endfor %}</table></div>
+{% endblock %}

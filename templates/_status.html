@@ -1,0 +1,6 @@
+{% macro status(s) -%}
+<span class="chip {{ 'good' if s in ('delivered','shipped','paid') else 'bad' if s in ('cancelled','refunded') else 'warn' if s in ('awaiting_payment','processing') else '' }}">{{ STATUS_LABELS.get(s, s) }}</span>
+{%- endmacro %}
+{% macro pay(s) -%}
+<span class="chip {{ 'good' if s == 'paid' else 'bad' if s in ('failed','refunded','expired') else 'warn' }}">{{ PAYMENT_LABELS.get(s, s) }}</span>
+{%- endmacro %}

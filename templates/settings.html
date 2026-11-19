@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}Settings{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="/settings"><input type="hidden" name="csrf" value="{{ csrf }}">
+<div class="panel"><h2>Shop text</h2>
+<div class="grid cols-2"><div><label for="brand">Brand name</label><input id="brand" type="text" name="brand" value="{{ s.brand }}"></div>
+<div><label for="bn">Assistant name</label><input id="bn" type="text" name="bot_name" value="{{ s.bot_name }}"></div></div>
+<label for="w">Welcome message (main menu)</label><textarea id="w" name="welcome">{{ s.welcome }}</textarea>
+<label for="a">About us</label><textarea id="a" name="about">{{ s.about }}</textarea>
+<label for="f">Q&amp;A</label><textarea id="f" name="faq" style="min-height:220px">{{ s.faq }}</textarea><div class="hint">The AI assistant only answers from this and the product details, so keep it accurate. Lines starting "## " become headings.</div>
+<label for="t">Terms</label><textarea id="t" name="terms" style="min-height:160px">{{ s.terms }}</textarea>
+<div class="grid cols-2"><div><label for="si">Support intro</label><textarea id="si" name="support_intro">{{ s.support_intro }}</textarea></div>
+<div><label for="sh">Support hours</label><textarea id="sh" name="support_hours">{{ s.support_hours }}</textarea></div></div>
+<label for="r">Referral page text</label><textarea id="r" name="referral_text">{{ s.referral_text }}</textarea>
+</div>
+{% if can('owner') %}
+<input type="hidden" name="section" value="owner">
+<div class="panel"><h2>Delivery and checkout</h2>
+<div class="grid cols-2"><div><label for="d">Delivery price (£)</label><input id="d" type="text" name="delivery" value="{{ '%.2f'|format(s.delivery_pence|int / 100) }}"></div>
+<div><label for="fd">Free delivery over (£, 0 = never)</label><input id="fd" type="text" name="free_delivery_over" value="{{ '%.2f'|format(s.free_delivery_over_pence|int / 100) }}"></div></div>
+<label for="mq">Most of one product per order</label><input id="mq" type="number" min="1" max="99" name="max_qty_per_item" value="{{ s.max_qty_per_item }}" style="max-width:120px">
+</div>
+<div class="panel"><h2>Switches</h2>
+{% for k, l in [('payments_enabled','Take payments (Stripe)'),('ai_chat_enabled','AI assistant answers customer messages'),('notify_admin_new_order','Alert the team group on each paid order'),('notify_admin_new_ticket','Alert the team group on support messages'),('notify_customer_status','Message customers when their order status changes')] %}
+<label class="row" style="font-weight:500"><input type="checkbox" name="{{ k }}" {{ 'checked' if s[k] == '1' }}> {{ l }}</label>{% endfor %}
+</div>
+{% endif %}
+<p><button>Save settings</button></p>
+</form>
+{% if can('owner') %}
+<div class="panel"><h2>Connections</h2>
+<p>Stripe: <b>{{ stripe_mode }}</b>. Webhook address to paste into Stripe: <code>{{ webhook_url }}</code></p>
+<table><tr><th>Railway variable</th><th>Set?</th></tr>
+{% for k, v in env.items() %}<tr><td><code>{{ k }}</code></td><td>{% if v %}<span class="chip good">yes</span>{% else %}<span class="chip bad">missing</span>{% endif %}</td></tr>{% endfor %}</table>
+<p class="hint">Values are never shown here. Change them in Railway → your service → Variables.</p></div>
+{% endif %}
+{% endblock %}
