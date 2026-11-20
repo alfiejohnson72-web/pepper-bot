@@ -246,8 +246,10 @@ def main_menu(uid: int | None = None) -> InlineKeyboardMarkup:
         [B("🎁 Refer a friend", "ref"), B("🌐 Language", "lang")],
         [B("ℹ️ About us", "about"), B("💬 Contact support", "support")],
     ]
-    if ai_enabled():
-        rows.insert(2, [B("🔎 Find a product", "choose")])
+    pens = [p for p in store.list_products(include_previews=True)
+            if p["slug"] in ("reta-pen-20mg", "reta-pen-40mg")]
+    if pens:
+        rows.insert(1, [B(p["name"], f"p:{p['id']}:1") for p in pens])
     return InlineKeyboardMarkup(rows)
 
 
@@ -389,10 +391,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user["blocked"]:
         await update.message.reply_text("ur account is paused. if u think this is a mistake email the team")
         return
-    if payload.startswith("p_") and payload[2:].isdigit() and store.get_product(int(payload[2:]), include_previews=True):
+    if payload.startswith("p_") and payload[2:].isdigit():
         p = store.get_product(int(payload[2:]), include_previews=True)
-        await show(update, product_text(p), product_kb(p, 1), photo=p)
-        return
+        if p is not None:
+            await show(update, product_text(p), product_kb(p, 1), photo=p)
+            return
     if payload == "basket":
         text, kb = basket_screen(tg.id)
         await update.message.reply_text(text, reply_markup=kb)
@@ -561,12 +564,13 @@ async def route_button(update, context, q, data: str, tg) -> None:
         await q.answer()
     elif data == "menu":
         await show(update, welcome_text(), main_menu(tg.id))
-    elif data == "all":
+    elif data in ("all", "choose"):
         prods = store.list_products(include_previews=True)
         await show(update, "Here's everything 👇" if prods else "nothing in the shop right now, check back soon",
                    product_list_kb(prods, "menu"))
     elif data == "cats":
-        cats = [c for c in store.list_categories() if store.list_products(c["id"], include_previews=True)]
+        populated = {p["category_id"] for p in store.list_products(include_previews=True)}
+        cats = [c for c in store.list_categories() if c["id"] in populated]
         rows = [[B(c["name"], f"cat:{c['id']}")] for c in cats] + [[B("🛍 All products", "all")], HOME]
         await show(update, "Pick a category 👇" if cats else "No categories to browse yet.", InlineKeyboardMarkup(rows))
     elif data.startswith("cat:"):
@@ -661,9 +665,6 @@ async def route_button(update, context, q, data: str, tg) -> None:
         context.user_data["support_order"] = data[4:]
         await show(update, f"whats up with order {data[4:]}? type it below and the team will reply here",
                    InlineKeyboardMarkup([[B("Cancel", "menu")]]))
-    elif data == "choose":
-        context.user_data["history"] = []
-        await show(update, "Which AB Labs product or format would you like to look up?", None)
     elif data.startswith("ask:"):
         p = store.get_product(int(data[4:]))
         if p:
