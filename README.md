@@ -7,7 +7,7 @@ One Railway service runs everything:
 - **Payments.** Stripe Checkout. An order is only marked paid when Stripe itself confirms it (a signed webhook, or a direct lookup). A customer's message or screenshot never marks anything paid.
 - **Notifications.** Payment confirmations, shipping updates, support replies and team alerts. Each one is sent once, and retried if Telegram fails.
 
-AB Labs sells cosmetic skincare only. The dashboard refuses products that mention injectables, research peptides, weight-loss drugs, nasal sprays, capsules or mg doses, and the bot never shows one even if the database is edited by hand.
+AB Labs uses Pepper for catalogue lookup and order support. Draft products stay hidden until a manager confirms their details and enables them.
 
 ## Files
 
@@ -18,8 +18,8 @@ AB Labs sells cosmetic skincare only. The dashboard refuses products that mentio
 | `store.py` | The database (SQLite): customers, products, orders, payments, tickets, settings, admins |
 | `payments.py` | Stripe checkout, verification and refunds |
 | `notify.py` | Customer and team notifications |
-| `guard.py` | The skincare-only rules for chat and products |
-| `catalogue.json` | The starting products. Only read the first time the shop starts; after that use the dashboard |
+| `guard.py` | Chat and catalogue validation |
+| `catalogue.json` | The draft catalogue applied once per database |
 | `faq.md` | The starting Q&A. After launch, edit it in the dashboard (Settings) |
 | `voice.md` | How the AI assistant talks |
 | `test_bot.py` | Offline tests: `python -m pytest -q` |
@@ -51,9 +51,9 @@ Set these in Railway → your service → **Variables**. Values are never shown 
 6. **Test order.** Buy something in the bot with Stripe's test card `4242 4242 4242 4242`. It should show as paid in the dashboard and you should get the Telegram alerts.
 7. **Live.** Swap both Stripe values for the live ones.
 
-## Before selling SPF
+## AB Labs catalogue update
 
-SPF products need a UK Responsible Person, a Cosmetic Product Safety Report, SCPN notification, and SPF and UVA test results that back the number on the label. Your manufacturer normally provides these. Replace the placeholder prices and "ingredients to be added" text in the dashboard first.
+On startup, the update hides the three original listings, adds the new catalogue as drafts and replaces outdated shop copy. Historical orders and existing products remain in the database. Confirm formats, sizes and prices in Products before enabling new listings.
 
 ## Team group commands
 

@@ -22,7 +22,7 @@
 <label for="ingredients">Ingredients</label><textarea id="ingredients" name="ingredients" maxlength="2000">{{ values.ingredients or '' }}</textarea><div class="hint">Paste the full INCI list from your manufacturer.</div>
 <label for="how">How to use</label><textarea id="how" name="how_to_use" maxlength="1000">{{ values.how_to_use or '' }}</textarea>
 <label class="row" style="font-weight:500"><input type="checkbox" name="active" {{ 'checked' if values.active in (1, '1', 'on', True) }}> Show in the shop</label>
-<p class="hint">Cosmetic skincare only. Products that mention injectables, research peptides, weight-loss drugs, nasal sprays, capsules or mg doses are refused.</p>
+<p class="hint">Confirm product details before enabling the listing. Keep dosage and administration instructions out of the catalogue.</p>
 <p><button>Save product</button></p>
 </form>
 {% if product %}
