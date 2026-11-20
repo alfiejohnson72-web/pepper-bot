@@ -421,11 +421,15 @@ def list_categories(active_only: bool = True) -> list[sqlite3.Row]:
         return con.execute(q).fetchall()
 
 
-def list_products(category_id: int | None = None, *, shop_only: bool = True) -> list[sqlite3.Row]:
+def list_products(category_id: int | None = None, *, shop_only: bool = True, include_previews: bool = False) -> list[sqlite3.Row]:
     q = "SELECT p.*, c.name AS category FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE p.deleted=0"
     args: list = []
     if shop_only:
-        q += " AND p.active=1 AND (c.id IS NULL OR c.active=1)"
+        q += " AND (c.id IS NULL OR c.active=1)"
+        if include_previews:
+            q += " AND (p.active=1 OR p.slug IN ('reta-pen-20mg', 'reta-pen-40mg', 'mtb', 'bpc-157'))"
+        else:
+            q += " AND p.active=1"
     if category_id is not None:
         q += " AND p.category_id=?"
         args.append(category_id)
@@ -436,14 +440,18 @@ def list_products(category_id: int | None = None, *, shop_only: bool = True) -> 
     return [r for r in rows if not shop_only or product_is_safe(r)]
 
 
-def get_product(pid: int, *, shop_only: bool = True) -> sqlite3.Row | None:
+def get_product(pid: int, *, shop_only: bool = True, include_previews: bool = False) -> sqlite3.Row | None:
     with ro() as con:
         p = con.execute("SELECT p.*, c.name AS category FROM products p LEFT JOIN categories c "
                         "ON c.id=p.category_id WHERE p.id=? AND p.deleted=0", (pid,)).fetchone()
     if p is None:
         return None
-    if shop_only and (not p["active"] or not product_is_safe(p)):
-        return None
+    if shop_only:
+        if include_previews:
+            if not any(row["id"] == pid for row in list_products(p["category_id"], include_previews=True)):
+                return None
+        elif not p["active"] or not product_is_safe(p):
+            return None
     return p
 
 

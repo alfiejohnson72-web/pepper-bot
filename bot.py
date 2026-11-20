@@ -259,14 +259,22 @@ def welcome_text() -> str:
     return store.get_setting("welcome")
 
 
+def browse_label(p: sqlite3.Row) -> str:
+    if not p["active"]:
+        return f"{p['name']} · Coming soon"
+    return f"{p['name']} · {money(p['price_pence'])}" + ("" if store.in_stock(p) else " (sold out)")
+
+
 def product_list_kb(products: list[sqlite3.Row], back: str) -> InlineKeyboardMarkup:
-    rows = [[B(f"{p['name']} · {money(p['price_pence'])}" + ("" if store.in_stock(p) else " (sold out)"), f"p:{p['id']}:1")]
+    rows = [[B(browse_label(p), f"p:{p['id']}:1")]
             for p in products]
     rows.append([B("⬅️ Back", back), *HOME])
     return InlineKeyboardMarkup(rows)
 
 
 def product_text(p: sqlite3.Row) -> str:
+    if not p["active"]:
+        return f"{p['name']}\n{p['category'] or 'Format to be confirmed'}\n\nComing soon. Pricing and availability are pending."
     parts = [f"{p['name']}" + (f" ({p['size']})" if p["size"] else ""), money(p["price_pence"])]
     if p["summary"]:
         parts += ["", p["summary"]]
@@ -286,10 +294,10 @@ def product_text(p: sqlite3.Row) -> str:
 def product_kb(p: sqlite3.Row, qty: int) -> InlineKeyboardMarkup:
     back = f"cat:{p['category_id']}" if p["category_id"] else "all"
     rows = []
-    if store.in_stock(p):
+    if p["active"] and store.in_stock(p):
         rows.append([B("➖", f"p:{p['id']}:{max(1, qty - 1)}"), B(f"Qty {qty}", "noop"), B("➕", f"p:{p['id']}:{qty + 1}")])
         rows.append([B(f"🧺 Add to basket · {money(p['price_pence'] * qty)}", f"add:{p['id']}:{qty}")])
-    if ai_enabled():
+    if p["active"] and ai_enabled():
         rows.append([B("💬 Ask about this", f"ask:{p['id']}")])
     rows.append([B("⬅️ Back", back), B("🧺 Basket", "bk"), *HOME])
     return InlineKeyboardMarkup(rows)
@@ -381,8 +389,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if user["blocked"]:
         await update.message.reply_text("ur account is paused. if u think this is a mistake email the team")
         return
-    if payload.startswith("p_") and payload[2:].isdigit() and store.get_product(int(payload[2:])):
-        p = store.get_product(int(payload[2:]))
+    if payload.startswith("p_") and payload[2:].isdigit() and store.get_product(int(payload[2:]), include_previews=True):
+        p = store.get_product(int(payload[2:]), include_previews=True)
         await show(update, product_text(p), product_kb(p, 1), photo=p)
         return
     if payload == "basket":
@@ -407,13 +415,12 @@ async def menu_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def shop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.effective_chat.type != ChatType.PRIVATE:
         await update.message.reply_text(
-            "Here's the range. Tap one to see it and order privately 👇",
-            reply_markup=InlineKeyboardMarkup([[B(f"{p['name']} · {money(p['price_pence'])}",
-                                                  url=deep_link(context.bot.username, f"p_{p['id']}"))]
-                                               for p in store.list_products()]))
+            "Here's the range. Tap one to view details privately 👇",
+            reply_markup=InlineKeyboardMarkup([[B(browse_label(p), url=deep_link(context.bot.username, f"p_{p['id']}"))]
+                                               for p in store.list_products(include_previews=True)]))
         return
     ensure_user(update)
-    await update.message.reply_text("Here's everything 👇", reply_markup=product_list_kb(store.list_products(), "menu"))
+    await update.message.reply_text("Here's everything 👇", reply_markup=product_list_kb(store.list_products(include_previews=True), "menu"))
 
 
 async def basket_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -555,20 +562,20 @@ async def route_button(update, context, q, data: str, tg) -> None:
     elif data == "menu":
         await show(update, welcome_text(), main_menu(tg.id))
     elif data == "all":
-        prods = store.list_products()
+        prods = store.list_products(include_previews=True)
         await show(update, "Here's everything 👇" if prods else "nothing in the shop right now, check back soon",
                    product_list_kb(prods, "menu"))
     elif data == "cats":
-        cats = [c for c in store.list_categories() if store.list_products(c["id"])]
+        cats = [c for c in store.list_categories() if store.list_products(c["id"], include_previews=True)]
         rows = [[B(c["name"], f"cat:{c['id']}")] for c in cats] + [[B("🛍 All products", "all")], HOME]
-        await show(update, "Pick a category 👇", InlineKeyboardMarkup(rows))
+        await show(update, "Pick a category 👇" if cats else "No categories to browse yet.", InlineKeyboardMarkup(rows))
     elif data.startswith("cat:"):
-        prods = store.list_products(int(data[4:]))
+        prods = store.list_products(int(data[4:]), include_previews=True)
         await show(update, "Here's what's in there 👇" if prods else "nothing in there right now",
                    product_list_kb(prods, "cats"))
     elif data.startswith("p:"):
         _, pid, qty = data.split(":")
-        p = store.get_product(int(pid))
+        p = store.get_product(int(pid), include_previews=True)
         if p is None:
             await show(update, "that product isnt available anymore", InlineKeyboardMarkup([[B("🛍 All products", "all")], HOME]))
             return
