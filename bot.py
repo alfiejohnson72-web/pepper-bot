@@ -96,7 +96,7 @@ def build_system_prompt() -> str:
     b = brand()
     return f"""You are {bot_name()}, the AB Labs Telegram catalogue and order-support assistant.
 
-- Help customers look up RETA, MTB and BPC-157 by name or confirmed format. Only give product details from the active catalogue. Treat missing details and draft entries as unconfirmed.
+- Help customers look up RETA and MT2 by name or confirmed format. Only give product details from the active catalogue. Treat missing details and draft entries as unconfirmed.
 - Answer questions about stock, the catalogue, order tracking and support. Use the FAQ below for shop information.
 - Keep replies neutral. Do not recommend a peptide or give dosing, preparation, administration, medical advice, or claims about benefits, quality, approval or safety.
 - For questions about personal use, direct the customer to a qualified healthcare professional. For order issues or missing catalogue details, offer help from the team and end with [[handoff]] on its own line.
@@ -739,6 +739,21 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await submit_support(update, context, text)
         return
 
+    if private:
+        lookup = " ".join(text.casefold().split())
+        if lookup in {"reta", "retatrutide", "reta pens", "mt2", "mt-2", "products", "catalogue"}:
+            products = store.list_products(include_previews=True)
+            if lookup in {"reta", "retatrutide", "reta pens"}:
+                products = [p for p in products if p["slug"].startswith("reta-pen-")]
+            elif lookup in {"mt2", "mt-2"}:
+                products = [p for p in products if p["slug"] == "mt2"]
+            await msg.reply_text("Catalogue" if products else "No matching listings are available.",
+                                 reply_markup=product_list_kb(products, "menu"))
+            return
+        if lookup in {"faq", "q&a"}:
+            await msg.reply_text(faq_text(), reply_markup=InlineKeyboardMarkup([HOME]))
+            return
+
     if guard.is_blocked(text):
         await msg.reply_text(guard.BLOCKED_REPLY, reply_markup=main_menu(tg.id) if private else InlineKeyboardMarkup(
             [[B(f"Chat with {bot_name()}", url=deep_link(context.bot.username, "group"))]]))
@@ -775,15 +790,11 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     bursts = split_bursts(clean)
     for i, part in enumerate(bursts):
         last = i == len(bursts) - 1
-        if i:
-            await context.bot.send_chat_action(chat.id, ChatAction.TYPING)
-            await asyncio.sleep(min(2.5, 0.6 + len(part) / 40))
         await msg.reply_text(part, reply_markup=recommend_buttons(prods, private, context.bot.username) if last else None)
     if handoff:
         if private:
             tid, is_new = store.add_ticket_message(tg.id, f"(AI handoff) {text}")
             notify.new_ticket_message(store.get_user(tg.id), tid, f"ai{store.now()}", text, is_new)
-            context.user_data["awaiting"] = "support"
         touch_lead(tg, human=True)
 
 

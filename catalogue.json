@@ -3,10 +3,8 @@
   "bot_name": "Pepper",
   "currency": "£",
   "tagline": "AB Labs Peptide Catalogue",
-  "_note": "Draft products are hidden until a manager confirms details and enables each listing.",
+  "_note": "Upcoming listings appear without prices until enabled in the dashboard.",
   "categories": [
-    "Nasal Sprays",
-    "Vials",
     "Pre-Filled Pens",
     "Format Pending"
   ],
@@ -36,23 +34,11 @@
       "active": false
     },
     {
-      "id": "mtb",
+      "id": "mt2",
       "category": "Format Pending",
-      "name": "MTB",
+      "name": "MT2",
       "size": "To be confirmed",
       "price": 20,
-      "summary": "Product details pending confirmation.",
-      "description": "Available formats and pack sizes will be listed once confirmed.",
-      "key_ingredients": [],
-      "how_to_use": "",
-      "active": false
-    },
-    {
-      "id": "bpc-157",
-      "category": "Format Pending",
-      "name": "BPC-157",
-      "size": "To be confirmed",
-      "price": 18,
       "summary": "Product details pending confirmation.",
       "description": "Available formats and pack sizes will be listed once confirmed.",
       "key_ingredients": [],

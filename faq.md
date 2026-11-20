@@ -1,7 +1,7 @@
 # AB Labs Q&A
 
 ## Catalogue
-- AB Labs lists RETA, MTB and BPC-157.
+- AB Labs lists RETA and MT2.
 - Check the individual listing for its confirmed format and pack size. Catalogue categories include Nasal Sprays, Vials and Pre-Filled Pens.
 - For missing or unclear listing details, tap "Contact support".
 

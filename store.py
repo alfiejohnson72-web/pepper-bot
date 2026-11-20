@@ -359,12 +359,16 @@ def seed_catalogue() -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
     cats: dict[str, int] = {}
     with tx() as con:
-        if con.execute("SELECT 1 FROM settings WHERE key='ab_labs_reta_pens'").fetchone():
+        if con.execute("SELECT 1 FROM settings WHERE key='ab_labs_reta_mt2'").fetchone():
             return
         already_updated = con.execute(
             "SELECT 1 FROM settings WHERE key='ab_labs_catalogue_v2'"
         ).fetchone()
-        con.execute("UPDATE products SET active=0 WHERE slug='reta'")
+        allowed = ("reta-pen-20mg", "reta-pen-40mg", "mt2")
+        con.execute("UPDATE products SET active=0, deleted=1, updated_at=? "
+                    "WHERE deleted=0 AND slug NOT IN (?, ?, ?)", (now(), *allowed))
+        con.execute("DELETE FROM basket_items WHERE product_id IN "
+                    "(SELECT id FROM products WHERE deleted=1)")
         if not already_updated:
             con.execute("UPDATE products SET active=0 WHERE slug IN ('daily-moisturiser', 'spf-30', 'spf-50')")
             con.execute("UPDATE categories SET active=0 WHERE name IN ('Moisturisers', 'Sun protection')")
@@ -374,8 +378,6 @@ def seed_catalogue() -> None:
             con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (c, i))
             cats[c] = con.execute("SELECT id FROM categories WHERE name=?", (c,)).fetchone()[0]
         for i, p in enumerate(data.get("products", [])):
-            if already_updated and p.get("id") not in ("reta-pen-20mg", "reta-pen-40mg"):
-                continue
             ingredients = ", ".join(p.get("key_ingredients", []))
             if listing_problems(p.get("name"), p.get("size"), p.get("summary"), p.get("description"),
                                 ingredients, p.get("how_to_use"), p.get("best_for")):
@@ -407,7 +409,9 @@ def seed_catalogue() -> None:
                                           if not re.search(r"cosmetic|skin only|patch test", line, re.I))
                     con.execute("UPDATE settings SET value=? WHERE key=?", (value, key))
             con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_catalogue_v2', '1')")
-        con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_reta_pens', '1')")
+        con.execute("UPDATE settings SET value=replace(value, ?, ?) WHERE key='faq'",
+                    ("RETA, MTB and BPC-157", "RETA and MT2"))
+        con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_reta_mt2', '1')")
 
 
 def product_is_safe(p: sqlite3.Row | dict) -> bool:
@@ -427,7 +431,7 @@ def list_products(category_id: int | None = None, *, shop_only: bool = True, inc
     if shop_only:
         q += " AND (c.id IS NULL OR c.active=1)"
         if include_previews:
-            q += " AND (p.active=1 OR p.slug IN ('reta-pen-20mg', 'reta-pen-40mg', 'mtb', 'bpc-157'))"
+            q += " AND (p.active=1 OR p.slug IN ('reta-pen-20mg', 'reta-pen-40mg', 'mt2'))"
         else:
             q += " AND p.active=1"
     if category_id is not None:
