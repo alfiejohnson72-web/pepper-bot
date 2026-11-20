@@ -12,13 +12,25 @@
   ],
   "products": [
     {
-      "id": "reta",
-      "category": "Format Pending",
-      "name": "RETA",
-      "size": "To be confirmed",
+      "id": "reta-pen-20mg",
+      "category": "Pre-Filled Pens",
+      "name": "RETA 20 mg Pen",
+      "size": "20 mg",
       "price": 22,
-      "summary": "Product details pending confirmation.",
-      "description": "Available formats and pack sizes will be listed once confirmed.",
+      "summary": "Pre-Filled Pens",
+      "description": "Price pending confirmation.",
+      "key_ingredients": [],
+      "how_to_use": "",
+      "active": false
+    },
+    {
+      "id": "reta-pen-40mg",
+      "category": "Pre-Filled Pens",
+      "name": "RETA 40 mg Pen",
+      "size": "40 mg",
+      "price": 22,
+      "summary": "Pre-Filled Pens",
+      "description": "Price pending confirmation.",
       "key_ingredients": [],
       "how_to_use": "",
       "active": false
