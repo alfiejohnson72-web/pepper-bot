@@ -239,12 +239,11 @@ def deep_link(bot_username: str, payload: str) -> str:
 def main_menu(uid: int | None = None) -> InlineKeyboardMarkup:
     n = store.basket_count(uid) if uid else 0
     rows = [
-        [B("🛍 All products", "all"), B("🗂 Categories", "cats")],
-        [B(f"🧺 Basket ({n})" if n else "🧺 Basket", "bk")],
-        [B("📦 My orders", "orders"), B("🚚 Track an order", "track")],
-        [B("❓ Q&A", "faq"), B("📄 Terms", "terms")],
-        [B("🎁 Refer a friend", "ref"), B("🌐 Language", "lang")],
-        [B("ℹ️ About us", "about"), B("💬 Contact support", "support")],
+        [B("🗂 Browse catalogue", "all"), B("🔎 Find a product", "search")],
+        [B(f"🧺 Basket ({n})" if n else "🧺 Basket", "bk"), B("📦 My orders", "orders")],
+        [B("🚚 Track delivery", "track"), B("💬 Contact the team", "support")],
+        [B("❓ FAQs", "faq"), B("📄 Terms", "terms")],
+        [B("🎁 Referrals", "ref"), B("🌐 Language", "lang"), B("ℹ️ About", "about")],
     ]
     pens = [p for p in store.list_products(include_previews=True)
             if p["slug"] in ("reta-pen-20mg", "reta-pen-40mg")]
@@ -258,7 +257,10 @@ def ai_enabled() -> bool:
 
 
 def welcome_text() -> str:
-    return store.get_setting("welcome")
+    welcome = store.get_setting("welcome")
+    if welcome == store.DEFAULT_SETTINGS["welcome"]:
+        return "AB Labs · Telegram catalogue\n\nBrowse the range or find an item by name. For existing orders, use Track delivery."
+    return welcome
 
 
 def browse_label(p: sqlite3.Row) -> str:
@@ -564,7 +566,11 @@ async def route_button(update, context, q, data: str, tg) -> None:
         await q.answer()
     elif data == "menu":
         await show(update, welcome_text(), main_menu(tg.id))
-    elif data in ("all", "choose"):
+    elif data in ("search", "choose"):
+        context.user_data["awaiting"] = "search"
+        await show(update, "Enter a product name or strength, such as RETA or 20 mg.",
+                   InlineKeyboardMarkup([[B("Browse catalogue", "all"), *HOME]]))
+    elif data == "all":
         prods = store.list_products(include_previews=True)
         await show(update, "Here's everything 👇" if prods else "nothing in the shop right now, check back soon",
                    product_list_kb(prods, "menu"))
@@ -720,6 +726,23 @@ async def on_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     touch_lead(tg, "group" if not private else None, message=True)
     awaiting = context.user_data.get("awaiting") if private else None
+
+    if awaiting == "search":
+        terms = re.findall(r"[a-z]+|[0-9]+", text.casefold())
+        products = []
+        if terms:
+            for product in store.list_products(include_previews=True):
+                label = f"{product['name']} {product['size']} {product['category'] or ''}"
+                words = set(re.findall(r"[a-z]+|[0-9]+", label.casefold()))
+                if all(term in words for term in terms):
+                    products.append(product)
+        if products:
+            context.user_data.pop("awaiting", None)
+            await msg.reply_text("Matching products", reply_markup=product_list_kb(products, "menu"))
+        else:
+            await msg.reply_text("No matches. Try a product name or strength.",
+                                 reply_markup=InlineKeyboardMarkup([[B("Browse catalogue", "all"), *HOME]]))
+        return
 
     if awaiting == "track":
         ref = re.sub(r"[^A-Z0-9-]", "", text.upper())
