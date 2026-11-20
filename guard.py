@@ -63,6 +63,17 @@ CATALOGUE_LABELS = {
 }
 
 
+RETA_PEN_SIZES = {"reta 20 mg pen": "20 mg", "reta 40 mg pen": "40 mg"}
+
+
+def listing_problems(name: str | None, size: str | None, *details: str | None) -> list[str]:
+    """Allow the two exact RETA pen labels and matching package strengths."""
+    expected_size = RETA_PEN_SIZES.get((name or "").strip().casefold())
+    if expected_size is not None and (size or "").strip().casefold() == expected_size:
+        return product_problems(*details)
+    return product_problems(name, size, *details)
+
+
 def product_problems(*texts: str | None) -> list[str]:
     """Return the blocked words found in any of the given fields (empty list = OK)."""
     found: list[str] = []

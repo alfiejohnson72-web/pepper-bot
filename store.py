@@ -22,7 +22,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from guard import product_problems
+from guard import listing_problems, product_problems
 
 BASE = Path(__file__).resolve().parent
 
@@ -359,19 +359,26 @@ def seed_catalogue() -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
     cats: dict[str, int] = {}
     with tx() as con:
-        if con.execute("SELECT 1 FROM settings WHERE key='ab_labs_catalogue_v2'").fetchone():
+        if con.execute("SELECT 1 FROM settings WHERE key='ab_labs_reta_pens'").fetchone():
             return
-        con.execute("UPDATE products SET active=0 WHERE slug IN ('daily-moisturiser', 'spf-30', 'spf-50')")
-        con.execute("UPDATE categories SET active=0 WHERE name IN ('Moisturisers', 'Sun protection')")
+        already_updated = con.execute(
+            "SELECT 1 FROM settings WHERE key='ab_labs_catalogue_v2'"
+        ).fetchone()
+        con.execute("UPDATE products SET active=0 WHERE slug='reta'")
+        if not already_updated:
+            con.execute("UPDATE products SET active=0 WHERE slug IN ('daily-moisturiser', 'spf-30', 'spf-50')")
+            con.execute("UPDATE categories SET active=0 WHERE name IN ('Moisturisers', 'Sun protection')")
         for i, c in enumerate(data.get("categories", [])):
             if product_problems(c):
                 continue
             con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (c, i))
             cats[c] = con.execute("SELECT id FROM categories WHERE name=?", (c,)).fetchone()[0]
         for i, p in enumerate(data.get("products", [])):
+            if already_updated and p.get("id") not in ("reta-pen-20mg", "reta-pen-40mg"):
+                continue
             ingredients = ", ".join(p.get("key_ingredients", []))
-            if product_problems(p.get("name"), p.get("summary"), p.get("description"), ingredients,
-                                p.get("how_to_use"), p.get("size"), p.get("best_for")):
+            if listing_problems(p.get("name"), p.get("size"), p.get("summary"), p.get("description"),
+                                ingredients, p.get("how_to_use"), p.get("best_for")):
                 continue  # never import a product the dashboard would refuse
             cat_name = p.get("category")
             if cat_name and cat_name not in cats and not product_problems(cat_name):
@@ -387,23 +394,25 @@ def seed_catalogue() -> None:
             )
 
 
-        for key in ("welcome", "about", "faq", "terms"):
-            row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
-            if row and re.search(r"skincare|moisturiser|sunscreen|\bspf\b|patch test", row["value"], re.I):
-                if key in ("welcome", "about"):
-                    value = DEFAULT_SETTINGS[key]
-                elif key == "faq":
-                    value = (BASE / "faq.md").read_text(encoding="utf-8")
-                else:
-                    value = "\n".join(line for line in row["value"].splitlines()
-                                      if not re.search(r"cosmetic|skin only|patch test", line, re.I))
-                con.execute("UPDATE settings SET value=? WHERE key=?", (value, key))
-        con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_catalogue_v2', '1')")
+        if not already_updated:
+            for key in ("welcome", "about", "faq", "terms"):
+                row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+                if row and re.search(r"skincare|moisturiser|sunscreen|\bspf\b|patch test", row["value"], re.I):
+                    if key in ("welcome", "about"):
+                        value = DEFAULT_SETTINGS[key]
+                    elif key == "faq":
+                        value = (BASE / "faq.md").read_text(encoding="utf-8")
+                    else:
+                        value = "\n".join(line for line in row["value"].splitlines()
+                                          if not re.search(r"cosmetic|skin only|patch test", line, re.I))
+                    con.execute("UPDATE settings SET value=? WHERE key=?", (value, key))
+            con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_catalogue_v2', '1')")
+        con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_reta_pens', '1')")
 
 
 def product_is_safe(p: sqlite3.Row | dict) -> bool:
-    return not product_problems(p["name"], p["summary"], p["description"], p["ingredients"],
-                                p["how_to_use"], p["size"])
+    return not listing_problems(p["name"], p["size"], p["summary"], p["description"],
+                                p["ingredients"], p["how_to_use"])
 
 
 def list_categories(active_only: bool = True) -> list[sqlite3.Row]:
@@ -468,7 +477,8 @@ def save_product(fields: dict, pid: int | None = None) -> int:
     for k, limit in (("summary", 300), ("description", 2000), ("ingredients", 2000), ("how_to_use", 1000), ("size", 40)):
         if len(text_fields[k]) > limit:
             raise ProductRejected(f"{k.replace('_', ' ').capitalize()} is too long (max {limit} characters).")
-    found = product_problems(name, *text_fields.values())
+    found = listing_problems(name, text_fields["size"], text_fields["summary"], text_fields["description"],
+                             text_fields["ingredients"], text_fields["how_to_use"])
     if found:
         raise ProductRejected(f"PRODUCT_REFUSED:{', '.join(found)}")
     category_id = fields.get("category_id") or None
