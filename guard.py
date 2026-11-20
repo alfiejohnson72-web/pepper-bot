@@ -58,7 +58,7 @@ PRODUCT_BLOCKED = re.compile(
 PRODUCT_REFUSAL = "This field contains restricted catalogue wording: {found}."
 
 CATALOGUE_LABELS = {
-    "reta", "retatrutide", "bpc-157", "mtb", "nasal sprays", "vials",
+    "reta", "retatrutide", "bpc-157", "mtb", "mt2", "nasal sprays", "vials",
     "pre-filled pens",
 }
 
