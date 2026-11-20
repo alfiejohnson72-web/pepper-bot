@@ -281,8 +281,8 @@ def migrate() -> None:
 DEFAULT_SETTINGS: dict[str, str] = {
     "brand": "AB Labs",
     "bot_name": "Pepper",
-    "welcome": "hey welcome to AB Labs 👋\n\neveryday skincare that actually gets used. moisturiser and daily spf, thats it\n\npick an option below 👇",
-    "about": "AB Labs is a small UK skincare brand run by A J and Bert. We keep it simple: a good moisturiser and daily SPF.",
+    "welcome": "Welcome to AB Labs. Browse the catalogue, track an order or contact our team.",
+    "about": "AB Labs catalogue and order support. Use the menu to browse listings or get in touch.",
     "faq": "",            # filled from faq.md on first run
     "terms": (
         "Terms of sale (summary)\n\n"
@@ -290,7 +290,6 @@ DEFAULT_SETTINGS: dict[str, str] = {
         "• Prices are in GBP and include VAT where it applies.\n"
         "• Payment is taken on a secure Stripe page. We never ask for card details in Telegram.\n"
         "• Unopened products can be returned within 14 days of delivery for a full refund.\n"
-        "• Cosmetics for use on the skin only. Patch test first and stop if irritation happens.\n"
         "• Full terms: ask support and we'll send them."
     ),
     "support_intro": "type ur message below and the team will get back to u here, usually within a few hours",
@@ -353,21 +352,22 @@ def slugify(text: str) -> str:
 
 
 def seed_catalogue() -> None:
-    """First run only: copy catalogue.json into the database. Never overwrites."""
-    with ro() as con:
-        if con.execute("SELECT COUNT(*) FROM products").fetchone()[0]:
-            return
+    """Apply the AB Labs draft catalogue once, keeping existing products and orders."""
     path = BASE / "catalogue.json"
     if not path.exists():
         return
     data = json.loads(path.read_text(encoding="utf-8"))
     cats: dict[str, int] = {}
     with tx() as con:
+        if con.execute("SELECT 1 FROM settings WHERE key='ab_labs_catalogue_v2'").fetchone():
+            return
+        con.execute("UPDATE products SET active=0 WHERE slug IN ('daily-moisturiser', 'spf-30', 'spf-50')")
+        con.execute("UPDATE categories SET active=0 WHERE name IN ('Moisturisers', 'Sun protection')")
         for i, c in enumerate(data.get("categories", [])):
             if product_problems(c):
                 continue
-            cur = con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (c, i))
-            cats[c] = cur.lastrowid or con.execute("SELECT id FROM categories WHERE name=?", (c,)).fetchone()[0]
+            con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (c, i))
+            cats[c] = con.execute("SELECT id FROM categories WHERE name=?", (c,)).fetchone()[0]
         for i, p in enumerate(data.get("products", [])):
             ingredients = ", ".join(p.get("key_ingredients", []))
             if product_problems(p.get("name"), p.get("summary"), p.get("description"), ingredients,
@@ -375,16 +375,30 @@ def seed_catalogue() -> None:
                 continue  # never import a product the dashboard would refuse
             cat_name = p.get("category")
             if cat_name and cat_name not in cats and not product_problems(cat_name):
-                cur = con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (cat_name, len(cats)))
+                con.execute("INSERT OR IGNORE INTO categories (name, sort) VALUES (?, ?)", (cat_name, len(cats)))
                 cats[cat_name] = con.execute("SELECT id FROM categories WHERE name=?", (cat_name,)).fetchone()[0]
             con.execute(
                 """INSERT INTO products (slug, name, category_id, size, price_pence, summary, description,
-                                         ingredients, how_to_use, sort, created_at, updated_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                         ingredients, how_to_use, sort, created_at, updated_at, active)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(slug) DO NOTHING""",
                 (p.get("id") or slugify(p["name"]), p["name"], cats.get(cat_name), p.get("size", ""),
                  round(float(p["price"]) * 100), p.get("summary", ""), p.get("description", p.get("best_for", "")),
-                 ingredients, p.get("how_to_use", ""), i, now(), now()),
+                 ingredients, p.get("how_to_use", ""), i, now(), now(), int(p.get("active", False))),
             )
+
+
+        for key in ("welcome", "about", "faq", "terms"):
+            row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+            if row and re.search(r"skincare|moisturiser|sunscreen|\bspf\b|patch test", row["value"], re.I):
+                if key in ("welcome", "about"):
+                    value = DEFAULT_SETTINGS[key]
+                elif key == "faq":
+                    value = (BASE / "faq.md").read_text(encoding="utf-8")
+                else:
+                    value = "\n".join(line for line in row["value"].splitlines()
+                                      if not re.search(r"cosmetic|skin only|patch test", line, re.I))
+                con.execute("UPDATE settings SET value=? WHERE key=?", (value, key))
+        con.execute("INSERT INTO settings (key, value) VALUES ('ab_labs_catalogue_v2', '1')")
 
 
 def product_is_safe(p: sqlite3.Row | dict) -> bool:

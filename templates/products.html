@@ -5,7 +5,7 @@
 <tr><th></th><th>Name</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th>In shop</th></tr>
 {% for p in products %}<tr>
 <td>{% if p.image_path %}<img class="thumb" src="/media/product/{{ p.id }}" alt="">{% else %}<div class="thumb"></div>{% endif %}</td>
-<td><a href="/products/{{ p.id }}">{{ p.name }}</a><div class="muted">{{ p.size }}</div>{% if not safe(p) %}<span class="chip bad">Hidden: breaks the skincare-only rules</span>{% endif %}</td>
+<td><a href="/products/{{ p.id }}">{{ p.name }}</a><div class="muted">{{ p.size }}</div>{% if not safe(p) %}<span class="chip bad">Hidden: contains restricted catalogue wording</span>{% endif %}</td>
 <td>{{ p.category or '—' }}</td><td class="num">{{ p.price_pence|money }}</td>
 <td class="num">{{ 'not tracked' if p.stock is none else p.stock }}</td>
 <td>{% if p.active %}<span class="chip good">Showing</span>{% else %}<span class="chip">Hidden</span>{% endif %}</td></tr>
